@@ -1,13 +1,20 @@
+mod count;
+
 use std::{borrow::Borrow, fs::File};
 
 use fontster::{
 	parse_font_file, Font, HorizontalAlign, Layout, LayoutSettings, LineHeight, StyledText,
 };
 use gifed::{
-	block::Palette,
+	block::{
+		extension::{DisposalMethod, GraphicControl},
+		Block, Palette,
+	},
 	writer::{ImageBuilder, Writer},
 	Color,
 };
+
+use crate::count::{Count, Number};
 
 fn main() {
 	let font = parse_font_file("Instruction.otf").unwrap();
@@ -36,21 +43,44 @@ fn main() {
 
 	// The spacing between letters
 	let spacing = widest.width as f32 / 4.0;
+	// The padding we put around the edges of the image
+	let edge_padding = spacing * 2.0;
 	// The spacing between groups. Like in 1 000 000 the groups are 1, 000, and 000
 	let group_padding = spacing * 2.0;
-	// The padding we put around the edges of the image
-	let edge_padding = spacing / 2.0;
 
 	// In the number 1_000_000 there are three groups.
 	// So we only beed 2 group_padding.
 	// In all the groups, there is only ever two characters directly next
 	// to one another four times. 4 spacing.
-	let width = widest.width as f32 * 10.0; // + spacing * 4.0 + group_padding * 2.0 + edge_padding;
-	let height = widest.height as f32 + edge_padding;
+	//let width = widest.width as f32 * 7.0 + spacing * 4.0 + group_padding * 2.0 + edge_padding * 2.0;
+	let width = widest.width as f32 * 3.0 + spacing * 3.0 + edge_padding * 2.0;
+	let height = widest.height as f32 + edge_padding * 2.0;
+
+	// Could I make this automated and work with infinetly large numbers? Probably.
+	// Do I want to do that right now? No.
+
+	// Width from the left, no padding
+	let wnp = width - edge_padding;
+	let gw = widest.width as f32;
+	// Half glyph width
+	let hgw = widest.width as f32 / 2.0;
+
+	// Positions ones, tenths, hundreds
+	let positions = vec![
+		wnp - hgw,
+		wnp - gw - spacing - hgw,
+		wnp - gw * 2.0 - spacing * 2.0 - hgw,
+	];
+
+	let mut count = Count::new(positions);
 
 	let width = width.ceil() as usize;
 	let height = height.ceil() as usize;
 
+	// The below code- the very, very messy code- does this:
+	// get the raster from fontster (really from fontdue, but fontster rexports) and stuff
+	// it into a WidestXTallest buffer. The glyph is horizontally centered and vertically
+	// bottom-anchored
 	let mut numbers = vec![];
 	for n in 0u8..=9 {
 		let (metrics, raster) = font.rasterize((48 + n) as char, size);
@@ -67,18 +97,37 @@ fn main() {
 		numbers.push(n_buffer);
 	}
 
-	let file = File::create("million.gif").unwrap();
+	let file = File::create("100.gif").unwrap();
 	let mut write = Writer::new(file, width as u16, height as u16, Some(grayscale())).unwrap();
 
-	for (idx, img) in numbers.into_iter().enumerate() {
+	for _ in 0..100 {
+		let count_numbers = count.next();
+
+		let (last, count_numbers) = count_numbers.split_last().unwrap();
+		for number in count_numbers {
+			let left = (number.position - hgw) as u16;
+			let raster = numbers[number.number as usize].clone();
+			write
+				.image(
+					ImageBuilder::new(widest.width as u16, widest.height as u16)
+						.offset(left, edge_padding as u16)
+						.build(raster)
+						.unwrap(),
+				)
+				.unwrap()
+		}
+
+		let left = (last.position - hgw) as u16;
+		let raster = numbers[last.number as usize].clone();
 		write
 			.image(
 				ImageBuilder::new(widest.width as u16, widest.height as u16)
-					.offset((widest.width * idx) as u16, 0)
-					.build(img)
+					.delay(100)
+					.offset(left, edge_padding as u16)
+					.build(raster)
 					.unwrap(),
 			)
-			.unwrap();
+			.unwrap()
 	}
 
 	write.done().unwrap();
