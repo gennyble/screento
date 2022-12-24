@@ -4,49 +4,19 @@ use fontster::{
 	parse_font_file, Font, HorizontalAlign, Layout, LayoutSettings, LineHeight, StyledText,
 };
 use gifed::{
-	block::Palette,
+	block::{LoopCount, Palette},
 	writer::{ImageBuilder, Writer},
 	Color,
 };
 
 fn main() {
 	let font = parse_font_file("Instruction.otf").unwrap();
-	let mut layout: Layout<()> = Layout::new(LayoutSettings {
-		horizontal_align: HorizontalAlign::Center,
-		line_height: LineHeight::Smallest(0.0),
-	});
 
 	let size = 64.0;
 	let widest = widest(&font, size);
 
-	let x_metrics = font.metrics('X', size);
-	let m_metrics = font.metrics('M', size);
-
-	println!(
-		"Widest was {} at {}px\nTallest was {} at {}px\nX is {}x{}\nM is {}x{}",
-		widest.wide_number,
-		widest.width,
-		widest.tall_number,
-		widest.height,
-		x_metrics.width,
-		x_metrics.height,
-		m_metrics.width,
-		m_metrics.height
-	);
-
-	// The spacing between letters
-	let spacing = widest.width as f32 / 4.0;
-	// The spacing between groups. Like in 1 000 000 the groups are 1, 000, and 000
-	let group_padding = spacing * 2.0;
-	// The padding we put around the edges of the image
-	let edge_padding = spacing / 2.0;
-
-	// In the number 1_000_000 there are three groups.
-	// So we only beed 2 group_padding.
-	// In all the groups, there is only ever two characters directly next
-	// to one another four times. 4 spacing.
-	let width = widest.width as f32 * 10.0; // + spacing * 4.0 + group_padding * 2.0 + edge_padding;
-	let height = widest.height as f32 + edge_padding;
+	let width = widest.width as f32 * 10.0;
+	let height = widest.height as f32;
 
 	let width = width.ceil() as usize;
 	let height = height.ceil() as usize;
@@ -67,15 +37,38 @@ fn main() {
 		numbers.push(n_buffer);
 	}
 
-	let file = File::create("million.gif").unwrap();
+	let file = File::create("0123456789.gif").unwrap();
 	let mut write = Writer::new(file, width as u16, height as u16, Some(grayscale())).unwrap();
+
+	write.repeat(LoopCount::Forever).unwrap();
+
+	write
+		.image(
+			ImageBuilder::new(width as u16, height as u16)
+				.build(vec![0; width * height])
+				.unwrap(),
+		)
+		.unwrap();
 
 	for (idx, img) in numbers.into_iter().enumerate() {
 		write
 			.image(
 				ImageBuilder::new(widest.width as u16, widest.height as u16)
 					.offset((widest.width * idx) as u16, 0)
+					.delay(25)
 					.build(img)
+					.unwrap(),
+			)
+			.unwrap();
+	}
+
+	for idx in (0..=9).rev() {
+		write
+			.image(
+				ImageBuilder::new(widest.width as u16, widest.height as u16)
+					.offset((widest.width * idx) as u16, 0)
+					.delay(25)
+					.build(vec![0; widest.width * widest.height])
 					.unwrap(),
 			)
 			.unwrap();
