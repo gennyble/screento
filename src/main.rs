@@ -1,22 +1,22 @@
 use std::fs::File;
 
-use fontster::{parse_font_file, Layout, LayoutSettings, StyledText};
+use fontster::{parse_font_file, HorizontalAlign, Layout, LayoutSettings, LineHeight, StyledText};
 use gifed::{
-	block::{
-		extension::{DisposalMethod, GraphicControl},
-		Palette,
-	},
+	block::Palette,
 	writer::{ImageBuilder, Writer},
 	Color,
 };
 
 fn main() {
 	let font = parse_font_file("LTCarpet.ttf").unwrap();
-	let mut layout: Layout<()> = Layout::new(LayoutSettings::default());
+	let mut layout: Layout<()> = Layout::new(LayoutSettings {
+		horizontal_align: HorizontalAlign::Center,
+		line_height: LineHeight::Smallest(0.0),
+	});
 	layout.append(
 		&[&font],
 		StyledText {
-			text: "hello, world!",
+			text: "screen to\nscreen to\nscreen to\nscreen to",
 			font_size: 64.0,
 			font_index: 0,
 			user: (),
@@ -26,7 +26,7 @@ fn main() {
 	let padding = layout.height() / 2.0;
 	let half_pad = (padding / 2.0) as u16;
 	let width = layout.width() + padding;
-	let height = layout.height() + padding * 5.0;
+	let height = layout.height() + padding;
 
 	let file = File::create("screento.gif").unwrap();
 	let mut write = Writer::new(file, width as u16, height as u16, Some(grayscale())).unwrap();
@@ -47,7 +47,7 @@ fn main() {
 				ImageBuilder::new(glyph.width as u16, glyph.height as u16)
 					.offset(
 						glyph.x.round() as u16 + half_pad,
-						glyph.y.round() as u16 + half_pad * 5,
+						glyph.y.round() as u16 + half_pad,
 					)
 					.delay(delay)
 					.build(raster)
