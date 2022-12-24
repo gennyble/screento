@@ -1,20 +1,18 @@
 mod count;
 
-use std::{borrow::Borrow, fs::File, path::Path, time::Instant};
+use std::{fs::File, time::Instant};
 
-use fontster::{
-	parse_font_file, Font, HorizontalAlign, Layout, LayoutSettings, LineHeight, StyledText,
-};
+use fontster::{parse_font_file, Font};
 use gifed::{
 	block::{
 		extension::{DisposalMethod, GraphicControl},
-		Block, Palette,
+		Block, CompressedImage, Palette,
 	},
 	writer::{ImageBuilder, Writer},
 	Color,
 };
 
-use crate::count::{Count, Number};
+use crate::count::Count;
 
 fn main() {
 	let font = parse_font_file("Instruction.otf").unwrap();
@@ -56,7 +54,12 @@ fn main() {
 			let raster_line_start = (y - dy) * metrics.width;
 			line.copy_from_slice(&raster[raster_line_start..raster_line_start + metrics.width]);
 		}
-		numbers.push(n_buffer);
+
+		let built = ImageBuilder::new(widest.width as u16, widest.height as u16)
+			.build(n_buffer)
+			.unwrap();
+		let compressed = built.image.compress(Some(8)).unwrap();
+		numbers.push(compressed);
 	}
 
 	let things = Things { numbers, widest };
@@ -72,7 +75,7 @@ fn main() {
 }
 
 pub struct Things {
-	numbers: Vec<Vec<u8>>,
+	numbers: Vec<CompressedImage>,
 	widest: Widest,
 }
 
@@ -149,29 +152,26 @@ fn doit<P: AsRef<str>>(start: usize, the_number: usize, filename: P, things: &Th
 
 		let (last, count_numbers) = count_numbers.split_last().unwrap();
 		for number in count_numbers {
-			let left = (number.position - hgw) as u16;
-			let raster = numbers[number.number as usize].clone();
-			write
-				.image(
-					ImageBuilder::new(widest.width as u16, widest.height as u16)
-						.offset(left, edge_padding as u16)
-						.build(raster)
-						.unwrap(),
-				)
-				.unwrap()
+			let mut raster = numbers[number.number as usize].clone();
+			raster.image_descriptor.left = (number.position - hgw) as u16;
+			raster.image_descriptor.top = edge_padding as u16;
+
+			write.image(raster).unwrap()
 		}
 
-		let left = (last.position - hgw) as u16;
-		let raster = numbers[last.number as usize].clone();
+		let mut raster = numbers[last.number as usize].clone();
+		raster.image_descriptor.left = (last.position - hgw) as u16;
+		raster.image_descriptor.top = edge_padding as u16;
 		write
-			.image(
-				ImageBuilder::new(widest.width as u16, widest.height as u16)
-					.delay(100)
-					.offset(left, edge_padding as u16)
-					.build(raster)
-					.unwrap(),
-			)
-			.unwrap()
+			.block(Block::GraphicControlExtension(GraphicControl::new(
+				DisposalMethod::DoNotDispose,
+				false,
+				false,
+				100,
+				0,
+			)))
+			.unwrap();
+		write.image(raster).unwrap();
 	}
 	println!("{filename} took {}ms", gif_start.elapsed().as_millis());
 
