@@ -18,4 +18,4 @@ font: <a href="https://www.dafont.com/lt-carpet.font?text=screen+to">LT Carpet</
 </section>
 </details>
 
-*see also: <a href="tree/counting">branch:counting</a>, <a href="tree/million">branch:million</a>*
+*see also: [branch:counting](https://github.com/gennyble/screento/tree/counting), [branch:million](https://github.com/gennyble/screento/tree/million)*
