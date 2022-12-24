@@ -1,6 +1,6 @@
 mod count;
 
-use std::{borrow::Borrow, fs::File};
+use std::{borrow::Borrow, fs::File, time::Instant};
 
 use fontster::{
 	parse_font_file, Font, HorizontalAlign, Layout, LayoutSettings, LineHeight, StyledText,
@@ -22,6 +22,8 @@ fn main() {
 		horizontal_align: HorizontalAlign::Center,
 		line_height: LineHeight::Smallest(0.0),
 	});
+
+	let all_start = Instant::now();
 
 	let size = 64.0;
 	let widest = widest(&font, size);
@@ -52,8 +54,8 @@ fn main() {
 	// So we only beed 2 group_padding.
 	// In all the groups, there is only ever two characters directly next
 	// to one another four times. 4 spacing.
-	//let width = widest.width as f32 * 7.0 + spacing * 4.0 + group_padding * 2.0 + edge_padding * 2.0;
-	let width = widest.width as f32 * 3.0 + spacing * 3.0 + edge_padding * 2.0;
+	let width =
+		widest.width as f32 * 7.0 + spacing * 4.0 + group_padding * 2.0 + edge_padding * 2.0;
 	let height = widest.height as f32 + edge_padding * 2.0;
 
 	// Could I make this automated and work with infinetly large numbers? Probably.
@@ -70,6 +72,10 @@ fn main() {
 		wnp - hgw,
 		wnp - gw - spacing - hgw,
 		wnp - gw * 2.0 - spacing * 2.0 - hgw,
+		wnp - gw * 3.0 - spacing * 2.0 - group_padding - hgw,
+		wnp - gw * 4.0 - spacing * 3.0 - group_padding - hgw,
+		wnp - gw * 5.0 - spacing * 4.0 - group_padding - hgw,
+		wnp - gw * 6.0 - spacing * 4.0 - group_padding * 2.0 - hgw,
 	];
 
 	let mut count = Count::new(positions);
@@ -97,10 +103,17 @@ fn main() {
 		numbers.push(n_buffer);
 	}
 
-	let file = File::create("100.gif").unwrap();
+	let file = File::create("1000.gif").unwrap();
 	let mut write = Writer::new(file, width as u16, height as u16, Some(grayscale())).unwrap();
 
-	for _ in 0..100 {
+	/*write
+	.block(Block::CommentExtension(
+		String::from("by gennyble").as_bytes().to_vec(),
+	))
+	.unwrap();*/
+
+	let gif_start = Instant::now();
+	for _ in 0..1_000_000 {
 		let count_numbers = count.next();
 
 		let (last, count_numbers) = count_numbers.split_last().unwrap();
@@ -129,6 +142,11 @@ fn main() {
 			)
 			.unwrap()
 	}
+	println!(
+		"Gif took {}ms\nEverything took {}ms",
+		gif_start.elapsed().as_millis(),
+		all_start.elapsed().as_millis()
+	);
 
 	write.done().unwrap();
 }

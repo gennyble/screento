@@ -14,6 +14,11 @@ impl Count {
 		}
 	}
 
+	pub fn set(&mut self, count: usize) {
+		self.current = count;
+		self.digits = vec![];
+	}
+
 	pub fn next(&mut self) -> Vec<Number> {
 		let next = self.current + 1;
 

@@ -1,19 +1,5 @@
-# screen to
-## screen to
-### screen to
-#### screen to
-##### screen to
-***screen to***
+Big gifs
 
-**screen to**
-
-screen to
-
-*screen to*
-
-<details style="width: 100%; text-align: right">
-<summary></summary>
-<section style="width: 100%; text-align: left">
-font: <a href="https://www.dafont.com/lt-carpet.font?text=screen+to">LT Carpet</a>
-</section>
-</details>
+10_000.gif: 171ms
+100_000.gif: 1597ms
+1_000_000.gif: 17626ms
