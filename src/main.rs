@@ -10,13 +10,14 @@ use gifed::{
 };
 
 fn main() {
-	let font = parse_font_file("Instruction.otf").unwrap();
+	let font = parse_font_file("alarm clock.ttf").unwrap();
 
 	let size = 64.0;
 	let widest = widest(&font, size);
 
-	let width = widest.width as f32 * 10.0;
-	let height = widest.height as f32;
+	let pad = size / 4.0;
+	let width = widest.width as f32 * 10.0 + pad * 2.0;
+	let height = widest.height as f32 + pad * 2.0;
 
 	let width = width.ceil() as usize;
 	let height = height.ceil() as usize;
@@ -38,7 +39,7 @@ fn main() {
 	}
 
 	let file = File::create("0123456789.gif").unwrap();
-	let mut write = Writer::new(file, width as u16, height as u16, Some(grayscale())).unwrap();
+	let mut write = Writer::new(file, width as u16, height as u16, Some(amber())).unwrap();
 
 	write.repeat(LoopCount::Forever).unwrap();
 
@@ -54,7 +55,7 @@ fn main() {
 		write
 			.image(
 				ImageBuilder::new(widest.width as u16, widest.height as u16)
-					.offset((widest.width * idx) as u16, 0)
+					.offset((pad as usize + widest.width * idx) as u16, pad as u16)
 					.delay(25)
 					.build(img)
 					.unwrap(),
@@ -66,7 +67,7 @@ fn main() {
 		write
 			.image(
 				ImageBuilder::new(widest.width as u16, widest.height as u16)
-					.offset((widest.width * idx) as u16, 0)
+					.offset((pad as usize + widest.width * idx) as u16, pad as u16)
 					.delay(25)
 					.build(vec![0; widest.width * widest.height])
 					.unwrap(),
@@ -82,6 +83,28 @@ pub fn grayscale() -> Palette {
 
 	for idx in 0..=255 {
 		plt.push(Color::new(idx, idx, idx));
+	}
+
+	plt
+}
+
+pub fn amber() -> Palette {
+	let lerp = |start: f32, end: f32, progress: f32| -> u8 {
+		((start * (1.0 - progress) + (end * progress)) * 255.0) as u8
+	};
+
+	let r = 0xff as f32;
+	let g = 0xbf as f32;
+
+	let mut plt = Palette::new();
+
+	for idx in 0..=255 {
+		let progress = idx as f32 / 255.0;
+		plt.push(Color::new(
+			lerp(0.0, r / 255.0, progress),
+			lerp(0.0, g / 255.0, progress),
+			0,
+		));
 	}
 
 	plt
