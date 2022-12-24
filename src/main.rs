@@ -13,7 +13,7 @@ fn main() {
 	let mut buffer = vec![0u8; 256 * 144];
 	for x in 0u8..=255 {
 		for y in 0..144 {
-			buffer[x as usize + y as usize * 144] = 1; //x;
+			buffer[x as usize + y as usize * 256] = x;
 		}
 
 		write
@@ -32,11 +32,9 @@ fn main() {
 pub fn grayscale() -> Palette {
 	let mut plt = Palette::new();
 
-	plt.push(Color::new(0, 0, 0));
-	plt.push(Color::new(255, 255, 255));
-	/*for idx in 0..=255 {
+	for idx in 0..=255 {
 		plt.push(Color::new(idx, idx, idx));
-	}*/
+	}
 
 	plt
 }
